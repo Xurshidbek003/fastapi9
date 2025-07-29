@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Elonlar Boshqaruvi</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background: #ffffffcc;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      backdrop-filter: blur(8px);
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .add-btn {
+      display: block;
+      margin: 0 auto 30px;
+      padding: 12px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .add-btn:hover {
+      background-color: #2980b9;
+    }
+
+    .cards {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      background: #3498db33;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      z-index: 0;
+    }
+
+    .card h3, .card p, .card small {
+      position: relative;
+      z-index: 1;
+    }
+
+    .price {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #e67e22;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      background-color: #dff0d8;
+      color: #3c763d;
+      margin-top: 10px;
+    }
+
+    .status.false {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+
+    /* Modal style */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(5px);
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content form {
+      display: grid;
+      gap: 15px;
+    }
+
+    input, textarea, select, button {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input, textarea, select {
+      background-color: #f0f0f0;
+    }
+
+    .modal-content button {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .modal-content button:hover {
+      background-color: #2980b9;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #aaa;
+      position: absolute;
+      right: 20px;
+      top: 10px;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🗒 Elonlar Boshqaruvi</h1>
+    <button class="add-btn" id="openModal">➕ Yangi Elon Qo‘shish</button>
+
+    <div class="cards" id="elonlar"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeModal">&times;</button>
+      <form id="addForm">
+        <input type="text" id="name" placeholder="Elon nomi" required />
+        <textarea id="description" placeholder="Tavsif" required></textarea>
+        <input type="number" id="price" placeholder="Narxi (so'mda)" required />
+        <select id="status">
+          <option value="true">Faol</option>
+          <option value="false">Nofaol</option>
+        </select>
+        <button type="submit">Qo‘shish</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const apiBase = 'http://localhost:8000';
+    const modal = document.getElementById('modal');
+    const openBtn = document.getElementById('openModal');
+    const closeBtn = document.getElementById('closeModal');
+
+    openBtn.onclick = () => modal.style.display = 'block';
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = e => { if (e.target == modal) modal.style.display = 'none'; }
+
+    async function getElonlar() {
+      const res = await fetch(`${apiBase}/get`);
+      const data = await res.json();
+      const container = document.getElementById('elonlar');
+      container.innerHTML = '';
+      data.reverse().forEach(elon => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>${elon.name}</h3>
+          <p>${elon.description}</p>
+          <p class="price">${elon.price} so‘m</p>
+          <div class="status ${elon.status ? 'true' : 'false'}">
+            ${elon.status ? 'Faol' : 'Nofaol'}
+          </div>
+          <small>🕒 ${new Date(elon.created_at).toLocaleString()}</small>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const description = document.getElementById('description').value;
+      const price = parseFloat(document.getElementById('price').value);
+      const status = document.getElementById('status').value === 'true';
+
+      const params = new URLSearchParams({ name, description, price, status });
+
+      const res = await fetch(`${apiBase}/add?${params.toString()}`, {
+        method: 'POST'
+      });
+
+      const result = await res.json();
+      alert(result.message);
+      modal.style.display = 'none';
+      getElonlar();
+      e.target.reset();
+    });
+
+    getElonlar();
+  </script>
+</body>
+</html>
